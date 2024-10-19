@@ -70,6 +70,26 @@ class TrieNode {
 
   // You can add additional fields and methods here except storing children. But in general, you don't need to add extra
   // fields to complete this project.
+
+  bool HasChild(char key_char) const {
+    return children_.find(key_char) != children_.end();
+  }
+
+  bool IsEndNode() const {
+    return is_value_node_;
+  }
+
+  void SetEndNode(bool is_end_node) {
+    is_value_node_ = is_end_node;
+  }
+
+  void InsertChildNode(char key_char, std::shared_ptr<TrieNode> child) {
+    children_[key_char] = child;
+  }
+
+  std::shared_ptr<const TrieNode> GetChildNode(char key_char) {
+    return children_[key_char];
+  }
 };
 
 // A TrieNodeWithValue is a TrieNode that also has a value of type T associated with it.
@@ -94,6 +114,10 @@ class TrieNodeWithValue : public TrieNode {
 
   // The value associated with this trie node.
   std::shared_ptr<T> value_;
+
+  std::shared_ptr<T> SetValue(T value) {
+    value_ = value;
+  }
 };
 
 // A Trie is a data structure that maps strings to values of type T. All operations on a Trie should not

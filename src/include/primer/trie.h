@@ -75,14 +75,6 @@ class TrieNode {
     return children_.find(key_char) != children_.end();
   }
 
-  bool IsEndNode() const {
-    return is_value_node_;
-  }
-
-  void SetEndNode(bool is_end_node) {
-    is_value_node_ = is_end_node;
-  }
-
   void InsertChildNode(char key_char, std::shared_ptr<TrieNode> child) {
     children_[key_char] = child;
   }
@@ -114,10 +106,6 @@ class TrieNodeWithValue : public TrieNode {
 
   // The value associated with this trie node.
   std::shared_ptr<T> value_;
-
-  std::shared_ptr<T> SetValue(T value) {
-    value_ = value;
-  }
 };
 
 // A Trie is a data structure that maps strings to values of type T. All operations on a Trie should not

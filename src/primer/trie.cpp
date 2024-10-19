@@ -6,7 +6,20 @@ namespace bustub {
 
 template <class T>
 auto Trie::Get(std::string_view key) const -> const T * {
-  throw NotImplementedException("Trie::Get is not implemented.");
+  auto cur_node = std::const_pointer_cast<TrieNode>(root_);
+  size_t index = 0;
+  // traverse till last node or last key char
+  while (cur_node != nullptr && index < key.size()) {
+    char cur_char = key[index];
+    cur_node = std::const_pointer_cast<TrieNode>(cur_node->GetChildNode(cur_char));
+    index++;
+  }
+  // try to cast to node with value
+  auto node = std::dynamic_pointer_cast<TrieNodeWithValue<T>>(cur_node);
+  if (node) {
+    return node->value_.get();
+  }
+  return nullptr;
 
   // You should walk through the trie to find the node corresponding to the key. If the node doesn't exist, return
   // nullptr. After you find the node, you should use `dynamic_cast` to cast it to `const TrieNodeWithValue<T> *`. If
@@ -20,39 +33,52 @@ auto Trie::Put(std::string_view key, T value) const -> Trie {
   std::shared_ptr<TrieNode> new_root;
   auto value_ptr = std::make_shared<T>(std::move(value));
 
-  if (root_ != nullptr) {
-    new_root = std::make_shared<TrieNode>(root_->children_);
-  } else {
-    new_root = std::make_shared<TrieNode>();
+  if (!key.empty()) { // not empty key
+    // value is not in root
+    if (root_ != nullptr) { // has existing root
+      // copy children from current root to new root
+      new_root = std::make_shared<TrieNode>(root_->children_);
+    } else {
+      new_root = std::make_shared<TrieNode>();
+    }
+  } else { // empty key
+    // value is in root
+    if (root_ != nullptr) { // has existing root
+      // copy children from current root to new root
+      new_root = std::make_shared<TrieNodeWithValue<T>>(root_->children_, value_ptr);
+    } else {
+      new_root = std::make_shared<TrieNodeWithValue<T>>(value_ptr);
+    }
   }
+  
   
   std::shared_ptr<Trie> new_trie = std::shared_ptr<Trie>((new Trie(new_root)));
 
   auto cur_node = std::const_pointer_cast<TrieNode>(new_trie->root_);
 
   for (size_t i = 0; i < key.size(); i++) {
-    auto cur_char = key[i];
+    char cur_char = key[i];
     if (!cur_node->HasChild(cur_char)) { // does not have the current key char
       if (i != key.size() - 1) { // not the last key char
         // insert node
         auto new_node = std::make_shared<TrieNode>();
-        cur_node->children_[cur_char] = new_node;
+        cur_node->InsertChildNode(cur_char, new_node);
       } else { // is the last key char
         // insert node with value
         auto new_node = std::make_shared<TrieNodeWithValue<T>>(value_ptr);
-        cur_node->children_[cur_char] = new_node;
+        cur_node->InsertChildNode(cur_char, new_node);
       }
     } else { // has the current key char
-      std::shared_ptr<const TrieNode> child = cur_node->children_[cur_char];
+      std::shared_ptr<const TrieNode> child = cur_node->GetChildNode(cur_char);
       if (i == key.size() -1) { // last key char
         // insert node with value
         auto new_node = std::make_shared<TrieNodeWithValue<T>>(child->children_, value_ptr);
-        cur_node->children_[cur_char] = new_node;
+        cur_node->InsertChildNode(cur_char, new_node);
       }
     }
     
     // move to next
-    cur_node = std::const_pointer_cast<TrieNode>(cur_node->children_[key[i]]);
+    cur_node = std::const_pointer_cast<TrieNode>(cur_node->GetChildNode(cur_char));
   }
 
   return *new_trie;

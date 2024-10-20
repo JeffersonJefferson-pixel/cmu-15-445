@@ -1,6 +1,7 @@
 #include "primer/trie.h"
 #include <string_view>
 #include "common/exception.h"
+#include <stack>
 
 namespace bustub {
 
@@ -37,7 +38,7 @@ auto Trie::Put(std::string_view key, T value) const -> Trie {
     // value is not in root
     if (root_ != nullptr) { // has existing root
       // copy children from current root to new root
-      new_root = std::make_shared<TrieNode>(root_->children_);
+      new_root = std::shared_ptr<TrieNode>(root_->Clone());
     } else {
       new_root = std::make_shared<TrieNode>();
     }
@@ -50,9 +51,9 @@ auto Trie::Put(std::string_view key, T value) const -> Trie {
       new_root = std::make_shared<TrieNodeWithValue<T>>(value_ptr);
     }
   }
-  
-  
-  std::shared_ptr<Trie> new_trie = std::shared_ptr<Trie>((new Trie(new_root)));
+
+  // new trie.
+  std::shared_ptr<Trie> new_trie(new Trie(new_root));
 
   auto cur_node = std::const_pointer_cast<TrieNode>(new_trie->root_);
 
@@ -87,8 +88,64 @@ auto Trie::Put(std::string_view key, T value) const -> Trie {
 }
 
 auto Trie::Remove(std::string_view key) const -> Trie {
-  throw NotImplementedException("Trie::Remove is not implemented.");
+  // new root
+  std::shared_ptr<TrieNode> new_root;
+  if (!key.empty()) { // not empty key
+    // value is not in root
+    if (root_ != nullptr) { 
+      new_root = std::shared_ptr<TrieNode>(root_->Clone());
+    } else {
+      new_root = std::make_shared<TrieNode>();
+    }
+  } else { // empty key
+    new_root = std::make_shared<TrieNode>(root_->children_);
+  }
 
+  // new trie.
+  std::shared_ptr<Trie> new_trie(new Trie(new_root));
+
+  // traverse trie.  
+  auto cur_node = std::const_pointer_cast<TrieNode>(new_trie->root_); 
+  std::stack<std::tuple<char, std::shared_ptr<TrieNode>>> stack;
+  for (size_t i = 0; i < key.size(); i++) {
+    char cur_char = key[i];
+    if (!cur_node->HasChild(cur_char)) {
+      return *new_trie;
+    }
+    
+    // push to stack.
+    stack.push(std::make_tuple(cur_char, cur_node));
+
+    if (i == key.size() - 1) { // last key char
+      // convert to child trie node since value is removed.
+      std::shared_ptr<const TrieNode> child = cur_node->GetChildNode(cur_char);
+      auto new_node = std::make_shared<TrieNode>(child->children_);
+      cur_node->InsertChildNode(cur_char, new_node);
+    }
+
+    // move to next
+    cur_node = std::const_pointer_cast<TrieNode>(cur_node->GetChildNode(cur_char));
+  }
+
+  // traverse up the trie to remove nodes with no children and is not a value node
+  while (!stack.empty()) {
+    auto pair = stack.top();
+    stack.pop();
+    auto key_char = std::get<0>(pair);
+    auto node = std::get<1>(pair);
+    std::shared_ptr<const TrieNode> child = node->GetChildNode(key_char);
+    if (child != nullptr && (child->HasChildren() || child->IsValueNode())) {
+      continue;
+    }
+    node->RemoveChildNode(key_char);
+  }
+
+  // remove root if it has no value and no children.
+  if (!new_trie->root_->IsValueNode() && !new_trie->root_->HasChildren()) {
+    new_trie->root_ = nullptr;
+  }
+
+  return *new_trie;
   // You should walk through the trie and remove nodes if necessary. If the node doesn't contain a value any more,
   // you should convert it to `TrieNode`. If a node doesn't have children any more, you should remove it.
 }

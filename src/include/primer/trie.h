@@ -75,12 +75,24 @@ class TrieNode {
     return children_.find(key_char) != children_.end();
   }
 
+  bool HasChildren() const {
+    return children_.size() > 0;
+  }
+
   void InsertChildNode(char key_char, std::shared_ptr<TrieNode> child) {
     children_[key_char] = child;
   }
 
   std::shared_ptr<const TrieNode> GetChildNode(char key_char) {
     return children_[key_char];
+  }
+
+  void RemoveChildNode(char key_char) {
+    children_.erase(key_char);
+  }
+
+  bool IsValueNode() const {
+    return is_value_node_;
   }
 };
 
